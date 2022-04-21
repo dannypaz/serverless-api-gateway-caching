@@ -70,7 +70,6 @@ class ApiGatewayCachingPlugin {
 
   httpEventCachingSchema() {
     return {
-      type: 'object',
       properties: {
         caching: {
           type: 'object',
