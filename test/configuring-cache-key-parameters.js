@@ -1,10 +1,10 @@
 const APP_ROOT = '..';
 const given = require(`${APP_ROOT}/test/steps/given`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
-const pathParams = require(`${APP_ROOT}/src/pathParametersCache`);
+const cacheKeyParams = require(`${APP_ROOT}/src/cacheKeyParameters`);
 const expect = require('chai').expect;
 
-describe('Configuring path parameter caching', () => {
+describe('Configuring cache key parameters', () => {
   let serverless;
   let serviceName = 'cat-api', stage = 'dev';
 
@@ -17,7 +17,7 @@ describe('Configuring path parameter caching', () => {
 
     it('should do nothing to the serverless instance', () => {
       let stringified = JSON.stringify(serverless);
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
       let stringifiedAfter = JSON.stringify(serverless);
       expect(stringified).to.equal(stringifiedAfter);
     });
@@ -35,7 +35,7 @@ describe('Configuring path parameter caching', () => {
 
     it('should do nothing to the serverless instance', () => {
       let stringified = JSON.stringify(serverless);
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
       let stringifiedAfter = JSON.stringify(serverless);
       expect(stringified).to.equal(stringifiedAfter);
     });
@@ -56,7 +56,7 @@ describe('Configuring path parameter caching', () => {
         .forStage(stage)
         .withFunction(functionWithCaching);
 
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
 
       method = serverless.getMethodResourceForFunction(functionWithCachingName);
     });
@@ -70,7 +70,7 @@ describe('Configuring path parameter caching', () => {
       }
     });
 
-    it('should not set any integration request parameters', () => {
+    it('should not set integration request parameters', () => {
       for (let parameter of cacheKeyParameters) {
         expect(method.Properties.Integration.RequestParameters)
           .to.not.include({
@@ -110,7 +110,7 @@ describe('Configuring path parameter caching', () => {
         .withFunction(functionWithCaching)
         .withFunction(functionWithoutCaching);
 
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
     });
 
 
@@ -191,7 +191,7 @@ describe('Configuring path parameter caching', () => {
         .withFunction(functionWithCaching)
         .withFunction(functionWithoutCaching);
 
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
     });
 
     describe('on the method corresponding with the endpoint with cache key parameters', () => {
@@ -262,7 +262,7 @@ describe('Configuring path parameter caching', () => {
           method = serverless.getMethodResourceForFunction(functionWithCachingName);
           method.Properties.RequestParameters[`method.${cacheKeyParameters[0].name}`] = isRequired;
 
-          when_configuring_path_parameters(serverless)
+          when_configuring_cache_key_parameters(serverless)
         });
 
         it('should keep configuration', () => {
@@ -296,7 +296,7 @@ describe('Configuring path parameter caching', () => {
           .withFunction(firstFunctionWithCaching)
           .withFunction(secondFunctionWithCaching);
 
-        when_configuring_path_parameters(serverless);
+        when_configuring_cache_key_parameters(serverless);
       });
 
       describe('on the method corresponding with the first endpoint with cache key parameters', () => {
@@ -387,7 +387,7 @@ describe('Configuring path parameter caching', () => {
         .forStage(stage)
         .withFunction(firstFunctionWithCaching)
 
-      when_configuring_path_parameters(serverless);
+      when_configuring_cache_key_parameters(serverless);
     });
 
     describe('on the method corresponding with the first endpoint with cache key parameters', () => {
@@ -494,7 +494,7 @@ describe('Configuring path parameter caching', () => {
           .forStage(stage)
           .withFunction(functionWithCaching);
 
-        when_configuring_path_parameters(serverless)
+        when_configuring_cache_key_parameters(serverless)
       });
 
       describe('on the corresponding method', () => {
@@ -534,6 +534,7 @@ describe('Configuring path parameter caching', () => {
     });
   }
 
+    // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
   describe('when there are methods with mapped cache key parameters', () => {
     let method, functionWithCachingName, getMethodCacheKeyParameters, postMethodCacheKeyParameters;
     before(() => {
@@ -550,7 +551,7 @@ describe('Configuring path parameter caching', () => {
         .forStage(stage)
         .withFunction(functionWithCaching);
 
-      when_configuring_path_parameters(serverless)
+      when_configuring_cache_key_parameters(serverless)
     });
 
     describe('on the GET method', () => {
@@ -637,7 +638,7 @@ describe('Configuring path parameter caching', () => {
   });
 });
 
-const when_configuring_path_parameters = (serverless) => {
+const when_configuring_cache_key_parameters = (serverless) => {
   let cacheSettings = new ApiGatewayCachingSettings(serverless);
-  return pathParams.addPathParametersCacheConfig(cacheSettings, serverless);
+  return cacheKeyParams.addCacheKeyParametersConfig(cacheSettings, serverless);
 }

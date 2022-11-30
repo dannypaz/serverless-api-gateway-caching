@@ -7,15 +7,15 @@ const getResourcesByName = (name, serverless) => {
   }
 }
 
-const addPathParametersCacheConfig = (settings, serverless) => {
-  for (let endpointSettings of settings.endpointSettings) {
+const applyCacheKeyParameterSettings = (settings, serverless) => {
+  for (let endpointSettings of settings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
     }
     const method = getResourcesByName(endpointSettings.gatewayResourceName, serverless);
     if (!method) {
       serverless.cli.log(`[serverless-api-gateway-caching] The method ${endpointSettings.gatewayResourceName} couldn't be found in the
-                           compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
+                            compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
       continue;
     }
     if (!method.Properties.Integration.CacheKeyParameters) {
@@ -30,6 +30,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
         let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
         method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
 
+        // without this check, endpoints 500 when using cache key parameters like "Authorization" or headers with the same characters in different casing (e.g. "origin" and "Origin")
         if (method.Properties.Integration.Type !== 'AWS_PROXY') {
           method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
         }
@@ -44,16 +45,24 @@ const addPathParametersCacheConfig = (settings, serverless) => {
         ) {
           method.Properties.RequestParameters[cacheKeyParameter.mappedFrom] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
         }
-        if (method.Properties.Integration.Type !== 'AWS_PROXY') {
-          method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.mappedFrom;
-        }
+
+        // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
+        // reconsider if this becomes an issue
+
+        // if (method.Properties.Integration.Type !== 'AWS_PROXY') {
+        method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.mappedFrom;
+        // }
         method.Properties.Integration.CacheKeyParameters.push(cacheKeyParameter.name)
       }
     }
     method.Properties.Integration.CacheNamespace = `${endpointSettings.gatewayResourceName}CacheNS`;
   }
 }
+const addCacheKeyParametersConfig = (settings, serverless) => {
+  applyCacheKeyParameterSettings(settings.endpointSettings, serverless);
+  applyCacheKeyParameterSettings(settings.additionalEndpointSettings, serverless);
+}
 
 module.exports = {
-  addPathParametersCacheConfig: addPathParametersCacheConfig
+  addCacheKeyParametersConfig: addCacheKeyParametersConfig
 }
